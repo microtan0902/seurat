@@ -47,7 +47,6 @@ library(patchwork)
 pbmc.data <- Read10X(data.dir = "../data/pbmc3k/filtered_gene_bc_matrices/hg19/")
 # Initialize the Seurat object with the raw (non-normalized data).
 pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
-pbmc
 ```
 <details>
   <summary>**What does data in a count matrix look like?**</summary>
@@ -55,6 +54,8 @@ pbmc
 ```{r}
 # Lets examine a few genes in the first thirty cells
 pbmc.data[c("CD3D","TCL1A","MS4A1"), 1:30]
+
+dim(pbmc.data) # RT: size of the matrix
 ```
 
 The `.` values in the matrix represent 0s (no molecules detected). Since most values in an scRNA-seq matrix are 0,  Seurat uses a sparse-matrix representation whenever possible. This results in significant memory and speed savings for Drop-seq/inDrop/10x data.
@@ -67,7 +68,7 @@ sparse.size
 dense.size / sparse.size
 ```
 </details>
-\  
+\
 
 # Standard pre-processing workflow
 
@@ -89,6 +90,7 @@ Seurat allows you to easily explore QC metrics and filter cells based on any use
 ```{r mito, fig.height=7, fig.width=13}
 # The [[ operator can add columns to object metadata. This is a great place to stash QC stats
 pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+head(pbmc[["percent.mt"]])
 ```
 
 <details>
@@ -108,6 +110,7 @@ In the example below, we visualize QC metrics, and use these to filter cells.
 * We filter cells that have unique feature counts over 2,500 or less than 200
 * We filter cells that have >5% mitochondrial counts
     
+RT: feature may refers to gene.    
 ```{r qc2, fig.height=7, fig.width=13}
 
 #Visualize QC metrics as a violin plot
@@ -120,6 +123,7 @@ plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA"
 plot1 + plot2
 
 pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+dim(pbmc)
 ```
 
 ***
@@ -135,6 +139,8 @@ For clarity, in this previous line of code (and in future commands), we provide 
 
 ```{r normalize.default, eval = FALSE}
 pbmc <- NormalizeData(pbmc)
+
+head(pbmc[["RNA"]]@data)
 ```
 
 # Identification of highly variable features (feature selection)
@@ -168,6 +174,7 @@ Next, we apply a linear transformation ('scaling') that is a standard pre-proces
 
 ```{r regress, fig.height=7, fig.width=11, results='hide'}
 all.genes <- rownames(pbmc)
+
 pbmc <- ScaleData(pbmc, features = all.genes)
 ```
 <details>
